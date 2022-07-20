@@ -1,0 +1,130 @@
+﻿.FlexViewer {
+    display: flex;
+    width: 100%;
+    background-color: lightpink;
+    justify-content: space-evenly;
+}
+
+.FlexViewerVertical {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background-color: lightseagreen;
+    overflow: hidden;
+}
+
+.FlexViewerNoSpacing {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    background-color: antiquewhite;
+}
+
+
+.ProgressBarInner {
+    display: flex;
+    width: 0;
+    height: 100%;
+    border-radius: 8px;
+    border-right: black 2px solid;
+    background-color: darksalmon;
+    transition: width, background-color ease 2s;
+    transition-duration: 1s;
+    justify-content: space-evenly;
+}
+
+.ProgressBarOuter {
+    display: flex;
+    width: 20%;
+    height: 30px;
+    border-radius: 10px;
+    border: black 2px solid;
+    background-color: darkblue;
+    justify-content: space-evenly;
+}
+
+.ProgressBarText {
+    position: relative;
+    margin: 0;
+}
+
+.DisplayItem {
+    background-color: darkgray;
+    width: 100%;
+    max-width: 500px;
+    height: 50%;
+    max-height: 150px;
+    border: 2px gray solid;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    background-color: aquamarine;
+}
+
+.Facade {
+    max-width: 85vw;
+}
+
+h1 {
+    margin-bottom: -5px;
+    font-size: 32px;
+    font-family: 'Ink Free';
+    width: 25%;
+    text-align: center;
+}
+
+h2 {
+    font-size: 26px;
+    font-family: 'Ink Free';
+    width: 25%;
+    text-align: center;
+}
+
+h3 {
+    padding-left: 20px;
+}
+
+li {
+    background-color: gray;
+    border: 1px dimgray solid;
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding-left: 15px;
+    font-size: 14px;
+}
+
+li:hover {
+    background-color: lightgray;
+}
+
+li:active {
+    background-color: lightslategray;
+}
+
+ol {
+    list-style: none;
+    overflow-y: scroll;
+    background-color: darkgray;
+    max-height: 300px;
+    width: 35%;
+    max-width: 35%;
+    padding-left: 0px;
+    border: 2px gray solid;
+    overflow-x: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+ol::-webkit-scrollbar {
+    display: none;
+}
+
+p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 18px;
+    margin-bottom: -5px;
+}
