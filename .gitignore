@@ -3,6 +3,7 @@
 ################################################################################
 
 /.vs
+/MacroTracking/.vs
 /MacroTracking/.vscode
 /MacroTracking/obj
 /MacroTracking/bin
