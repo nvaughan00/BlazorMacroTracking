@@ -2,46 +2,50 @@
 
 @using Models;
 @using Constants;
+@using Newtonsoft.Json;
+
+@inject HttpClient Http
 
 <PageTitle>Track</PageTitle>
 
 <div class="Facade">
+
     <!--Header Texts-->
     <div class="FlexViewer">
         <h1>Calories</h1>
-        <h1>Protein </h1>
-        <h1>Carbs   </h1>
-        <h1>Fat     </h1>
+        <h1>Protein</h1>
+        <h1>Carbs</h1>
+        <h1>Fat</h1>
     </div>
 
     <!--Progress Bars-->
     <div class="FlexViewer">
         <div class="ProgressBarOuter">
             <div class="ProgressBarInner" style=@CalorieBarStyle>
-                <p class="ProgressBarText" style=@CalorieBarTextStyle>@CalorieBar</p>
+                <p class="ProgressBarText" style=@CalorieBarTextStyle>@CalorieBarText</p>
             </div>
         </div>
 
         <div class="ProgressBarOuter">
             <div class="ProgressBarInner" style=@ProteinBarStyle>
-                <p class="ProgressBarText" style=@ProteinBarTextStyle>@ProteinBar</p>
+                <p class="ProgressBarText" style=@ProteinBarTextStyle>@ProteinBarText</p>
             </div>
         </div>
 
         <div class="ProgressBarOuter">
             <div class="ProgressBarInner" style=@CarbsBarStyle>
-                <p class="ProgressBarText" style=@CarbsBarTextStyle>@CarbsBar</p>
+                <p class="ProgressBarText" style=@CarbsBarTextStyle>@CarbsBarText</p>
             </div>
         </div>
 
         <div class="ProgressBarOuter">
             <div class="ProgressBarInner" style=@FatBarStyle>
-                <p class="ProgressBarText" style=@FatBarTextStyle>@FatBar</p>
+                <p class="ProgressBarText" style=@FatBarTextStyle>@FatBarText</p>
             </div>
         </div>
     </div>
 
-    <!--Macro Amount Texts-->
+    <!--Daily Intake Texts-->
     <div class="FlexViewer">
         <h2>@CalorieText</h2>
         <h2>@ProteinText</h2>
@@ -49,236 +53,384 @@
         <h2>@FatText</h2>
     </div>
 
-    <!--Track Item Viewer-->
+    <!--Main Viewer-->
     <div class="FlexViewerVertical" style="margin-top: 40px; max-width: 100%;">
-        <h3>Add Items</h3>
+        <div class="FlexViewer" style="justify-content: space-between;">
+            <h3>Add Items</h3>
+            <input class="SearchBar" type="text" @onchange="ListSearchFilterChanged" placeholder="Search..."/>
+            <button class="FilterButton" style=@AlphabeticalSortButtonStyle @onclick="(() => FilterListAlphabeticallyAsync())">A-Z</button>
+            <button class="FilterButton" style=@BreakfastSortButtonStyle @onclick="(() => FilterListByBreakfastTypeAsync())">Breakfast</button>
+            <button class="FilterButton" style=@SnackSortButtonStyle @onclick="(() => FilterListBySnackTypeAsync())">Snack</button>
+            <button class="FilterButton" style=@MealSortButtonStyle @onclick="(() => FilterListByMealTypeAsync())">Meal</button>
+        </div>
+        
+
+        <!--Item Viewer (left side)-->
         <div class="FlexViewerNoSpacing">
             <ol>
                 @foreach (var item in ListItems)
-                {      
-                    <li @onclick="@(x => GetMacroItemDetailsAsync(@item.Id))">@item.Name</li>
+                {
+                    <li @onclick="@(() => PushToSubmitQueueAsync(@item.Id))">@item.Name</li>
                 }
             </ol>
+
+            <!--Item Viewer (middle)-->
             <div class="FlexViewerVertical" style="width: 30%; max-width: 500px; background-color: antiquewhite;">
+
+                <!--Food display texts-->
                 <div class="DisplayItem"> 
-                    <p style="margin-left: 15px; margin-top: 10px;">
-                         @($"Description: {@MacroDisplayName}")
+                    <p class="TruncateText" style="margin-left: 15px; margin-top: 10px;">
+                        @($"Description: {@MacroDisplayName}")
                     </p>
-                    <p style="margin-left: 22px;">
+                    <p class="TruncateText" style="margin-left: 39px;">
                         @($"Calories: {@MacroDisplayCalories}")
                     </p>
-                    <p style="margin-left: 22px;">
+                    <p class="TruncateText" style="margin-left: 48px;">
                         @($"Protein: {@MacroDisplayProtein}") 
                     </p>
-                    <p style="margin-left: 26px;">
+                    <p class="TruncateText" style="margin-left: 57px;">
                         @($"Carbs: {@MacroDisplayCarbs}")
                     </p>
-                    <p style="margin-left: 28px;">
+                    <p class="TruncateText" style="margin-left: 79px;">
                         @($"Fat: {@MacroDisplayFat}")
                     </p>
                 </div>
 
-                <div class="DisplayItem"> Testing</div> 
+                <!--Middle buttons-->
+                <div class="DisplayItem" style="background-color: papayawhip">
+                    <div class="Submit" onclick="">Submit</div>
+                </div> 
             </div>
+
+            <!--Item Viewer (right side)-->
             <ol>
                 @foreach (var item in ListItemsAdded)
-                {      
-                    <li @key="item">@item.Name</li>
+                {
+                    <li @key="item" @onclick="@(() => RemoveFromSubmitQueueAsync(@item.Id))">@item.Name</li>
                 }
             </ol>
 
         </div>
     </div>
-  
+
 </div>
 
 @code {
-    private string? CalorieBar { get; set; }
+    #region DataBindings
+
+    //Progress Bars
+    private string? CalorieBarText { get; set; }
     private string? CalorieBarStyle { get; set; }
     private string? CalorieBarTextStyle { get; set; }
 
-    private string? ProteinBar { get; set; }
+    private string? ProteinBarText { get; set; }
     private string? ProteinBarStyle { get; set; }
     private string? ProteinBarTextStyle { get; set; }
 
-    private string? CarbsBar { get; set; }
+    private string? CarbsBarText { get; set; }
     private string? CarbsBarStyle { get; set; }
     private string? CarbsBarTextStyle { get; set; }
 
-    private string? FatBar { get; set; }
+    private string? FatBarText { get; set; }
     private string? FatBarStyle { get; set; }
     private string? FatBarTextStyle { get; set; }
 
+    //Daily Intake Texts
     private string? CalorieText { get; set; }
     private string? ProteinText { get; set; }
     private string? CarbsText { get; set; }
     private string? FatText { get; set; }
 
+    private decimal CalorieTextDigit { get; set; }
+    private decimal ProteinTextDigit { get; set; }
+    private decimal CarbsTextDigit { get; set; }
+    private decimal FatTextDigit { get; set; }
+
+    //Headers and such
     private string? MacroDisplayName { get; set; }
-    private double? MacroDisplayCalories { get; set; }
-    private double? MacroDisplayProtein { get; set; }
-    private double? MacroDisplayCarbs { get; set; }
-    private double? MacroDisplayFat { get; set; }
+    private decimal? MacroDisplayCalories { get; set; }
+    private decimal? MacroDisplayProtein { get; set; }
+    private decimal? MacroDisplayCarbs { get; set; }
+    private decimal? MacroDisplayFat { get; set; }
 
-    private List<MacroItem> ListItems = new List<MacroItem>()
-    {
-        new MacroItem(0, "test", 12.2, 1, 1231213.2, 1),
-        new MacroItem(1, "test1", 1231213.2, 1, 1231213.2, 1),
-        new MacroItem(2, "test2", 0.2, 1, 1231213.2, 1),
-        new MacroItem(3, "test3", .1, 1, 1231213.2, 1),
-        new MacroItem(4, "testaswfwefq9rq34fhq34fjq348f 4qf39jq83 fjq348 fjq34u fjq349f asda da sdasd asdasda sdasd asd asd asd adf", 12.2, 1, 1231213.2, 1),
-        new MacroItem(5, "test1asdf", 1231213.2, 1, 1231213.2, 1),
-        new MacroItem(6, "test21231", 0.2, 1, 1231213.2, 1),
-        new MacroItem(7, "test3", .1, 1, 1231213.2, 1),
-        new MacroItem(8, "test134", 12.2, 1, 1231213.2, 1),
-        new MacroItem(10, "test143456", 1231213.2, 1, 1231213.2, 1),
-        new MacroItem(11, "test2765", 0.2, 1, 1231213.2, 1),
-        new MacroItem(12, "test3fgh", .1, 1, 1231213.2, 1),
-        new MacroItem(13, "testvbnn", 12.2, 1, 1231213.2, 1),
-        new MacroItem(14, "test1dsfg345", 1231213.2, 1, 1231213.2, 1),
-        new MacroItem(15, "test2fxghdfgnbvn", 0.2, 1, 1231213.2, 1),
-        new MacroItem(16, "test33452q45sdfg", .1, 1, 1231213.2, 1)
-    };
+    //For use in listing items
+    private List<Item> MasterListItems = new List<Item>();
+    private List<Item> ListItems = new List<Item>();
+    private List<Item> ListItemsAdded = new List<Item>();
 
-    private List<MacroItem> ListItemsAdded = new List<MacroItem>();
+    //Button stylings
+    private string? AlphabeticalSortButtonStyle { get; set; }
+    private string? BreakfastSortButtonStyle { get; set; }
+    private string? SnackSortButtonStyle { get; set; }
+    private string? MealSortButtonStyle { get; set; }
+
+    //Button booleans
+    private bool ListCurrentlyFilteredByAlphabetical { get; set; } = false;
+    private bool ListCurrentlyFilteredByBreakfastType { get; set; } = false;
+    private bool ListCurrentlyFilteredBySnackType { get; set; } = false;
+    private bool ListCurrentlyFilteredByMealType { get; set; } = false;
+
+    #endregion Data Bindings
+
+    #region Start Program
 
     protected override async Task OnInitializedAsync() => await InitializeStuff().ConfigureAwait(false);
+
+    #endregion Start Program
+
+    #region Initialize
 
     private async Task InitializeStuff()
     {
         InitializeTextFields();
-        await Task.Run(() => InitializeProgressBars());
+        await Task.Run(() => PopulateLists());
     }
 
     private void InitializeTextFields()
     {
-        CalorieText = "100/2500";
-        ProteinText = "100/2500";
-        CarbsText = "100/2500";
-        FatText = "100/2500";
+        CalorieText = "0/2500";
+        ProteinText = "0/2500";
+        CarbsText = "0/2500";
+        FatText = "0/2500";
+
+        CalorieTextDigit = 0;
+        ProteinTextDigit = 0;
+        CarbsTextDigit = 0;
+        FatTextDigit = 0;
 
         StateHasChanged();
     }
 
-    private async Task InitializeProgressBars()
+    private async Task PopulateLists()
     {
-        var random = new Random();
+        List<Item>? tmp = await Http.GetFromJsonAsync<List<Item>>("data/Items.json");
 
-
-        while (1 < 2)
+        if (tmp != null)
         {
-            var rand = random.Next() % 100;
-
-            CalorieBar = rand + "%";
-            CalorieBarStyle = "width: " + rand + "%; background-color: " + GetColorBasedOnValue(rand);
-            CalorieBarTextStyle = "color: " + GetTextColorBasedOnValue(rand);
-
-            rand = random.Next() % 100;
-
-            ProteinBar = rand + "%";
-            ProteinBarStyle = "width: " + rand + "%; background-color: " + GetColorBasedOnValue(rand);
-            ProteinBarTextStyle = "color: " + GetTextColorBasedOnValue(rand);
-
-            rand = random.Next() % 100;
-
-            CarbsBar = rand + "%";
-            CarbsBarStyle = "width: " + rand + "%; background-color: " + GetColorBasedOnValue(rand);
-            CarbsBarTextStyle = "color: " + GetTextColorBasedOnValue(rand) + "; margin-left: -3px;";
-
-            rand = random.Next() % 100;
-
-            FatBar = rand + "%";
-            FatBarStyle = "width: " + rand + "%; background-color: " + GetColorBasedOnValue(rand);
-            FatBarTextStyle = "color: " + GetTextColorBasedOnValue(rand) + "; margin-left: -10px;";
-
-            await Task.Delay(2500);
-            StateHasChanged();
+            ListItems = tmp;
+            MasterListItems = tmp;
         }
     }
 
-    private async Task GetMacroItemDetailsAsync(int id)
+    #endregion Initialize
+
+    #region Item List Filtering & Sorting
+
+    private async Task PushToSubmitQueueAsync(int id)
     {
-        await Task.Run(() => GetMacroItemDetails(id));
+        await Task.Run(() => PushToSubmitQueue(id));
     }
 
-    private void GetMacroItemDetails(int id)
+    private async Task RemoveFromSubmitQueueAsync(int id)
     {
-        MacroItem? item = ListItems.Find(x => x.Id == id) ?? new MacroItem(-1, "Err", 0, 0, 0, 0);
+        await Task.Run(() => RemoveFromSubmitQueue(id));
+    }
 
-        MacroDisplayName = item.Name;
-        MacroDisplayCalories = item.Calories;
-        MacroDisplayProtein = item.Protein;
-        MacroDisplayCarbs = item.Carbs;
-        MacroDisplayFat = item.Fat;
+    private async Task FilterListAlphabeticallyAsync()
+    {
+        await Task.Run(() => ApplyFilters(0));
+    }
 
-        ListItemsAdded.Insert(
-            0, 
-            new MacroItem(
-                999, 
-                item.Name, 
-                item.Calories, 
-                item.Protein, 
-                item.Carbs, 
-                item.Fat
-            )
-        );
+    private async Task FilterListByBreakfastTypeAsync()
+    {
+        await Task.Run(() => ApplyFilters(1));
+    }
+
+    private async Task FilterListBySnackTypeAsync()
+    {
+        await Task.Run(() => ApplyFilters(2));
+    }
+
+    private async Task FilterListByMealTypeAsync()
+    {
+        await Task.Run(() => ApplyFilters(3));
+    }
+
+    private void PushToSubmitQueue(int id)
+    {
+        Item? item = ListItems.Find(x => x.Id == id);
+
+        if (item is not null)
+        {
+            MacroDisplayName = item.Name;
+            MacroDisplayCalories = item.Calories;
+            MacroDisplayProtein = item.Protein;
+            MacroDisplayCarbs = item.Carbs;
+            MacroDisplayFat = item.Fat;
+
+            CalorieTextDigit += item.Calories;
+            ProteinTextDigit += item.Protein;
+            CarbsTextDigit += item.Carbs;
+            FatTextDigit += item.Fat;
+
+            CalorieText = CalorieTextDigit.ToString("0.00") + "/2500";
+            ProteinText = ProteinTextDigit.ToString("0.00") + "/2500";
+            CarbsText = CarbsTextDigit.ToString("0.00") + "/2500";
+            FatText = FatTextDigit.ToString("0.00") + "/2500";
+
+            UpdateProgressBars();
+
+            ListItemsAdded.Insert(
+                0,
+                new Item(
+                    item.Id,
+                    item.Name,
+                    item.Calories,
+                    item.Protein,
+                    item.Carbs,
+                    item.Fat,
+                    item.FoodType
+                )
+            );
+        }
 
         StateHasChanged();
     }
 
-    private String GetColorBasedOnValue(int rand)
+    private void RemoveFromSubmitQueue(int id)
     {
-        if (rand > 0 && rand < 18)
+        Item? item = ListItemsAdded.Find(x => x.Id == id) ?? null;
+
+        Console.WriteLine(id);
+
+        if (item != null)
         {
-            return Constants.ColorGradiant[0];
+            CalorieTextDigit -= item.Calories;
+            ProteinTextDigit -= item.Protein;
+            CarbsTextDigit -= item.Carbs;
+            FatTextDigit -= item.Fat;
+
+            CalorieText = CalorieTextDigit + "/2500";
+            ProteinText = ProteinTextDigit + "/2500";
+            CarbsText = CarbsTextDigit + "/2500";
+            FatText = FatTextDigit + "/2500";
+
+            ListItemsAdded.Remove(item);
         }
-        else if (rand > 18 && rand < 36)
-        {
-            return Constants.ColorGradiant[1];
-        }
-        else if (rand > 36 && rand < 54)
-        {
-            return Constants.ColorGradiant[2];
-        }
-        else if (rand > 54 && rand < 72)
-        {
-            return Constants.ColorGradiant[3];
-        }
-         else if (rand > 72 && rand < 90)
-        {
-            return Constants.ColorGradiant[4];
-        }
-        else
-        {
-            return Constants.ColorGradiant[5];
-        }
+
+        StateHasChanged();
     }
 
-    private String GetTextColorBasedOnValue(int rand)
+    private void ApplyFilters(int filterType)
     {
-        if (rand > 0 && rand < 18)
+        switch (filterType)
         {
-            return Constants.ColorGradiantText[0];
+            case 0:
+                if (ListCurrentlyFilteredByAlphabetical)
+                {
+                    ListCurrentlyFilteredByAlphabetical = false;
+                    ListItems = ListItems.OrderByDescending(x => x.Name).ToList();
+                    AlphabeticalSortButtonStyle = "background-color: sandybrown";
+                }
+                else
+                {
+                    ListCurrentlyFilteredByAlphabetical = true;
+                    ListItems = ListItems.OrderBy(x => x.Name).ToList();
+                    AlphabeticalSortButtonStyle = "background-color: darkorange";
+                }
+                StateHasChanged();
+                break;
+
+            case 1:
+                if (ListCurrentlyFilteredByBreakfastType)
+                {
+                    ListCurrentlyFilteredByBreakfastType = false;
+                    ListItems = MasterListItems;
+                    BreakfastSortButtonStyle = "background-color: sandybrown";
+                }
+                else
+                {
+                    //Set breakfast sort
+                    ListCurrentlyFilteredByBreakfastType = true;
+                    ListItems = MasterListItems.Where(x => x.FoodType == FoodTypes.BREAKFAST).ToList();
+                    BreakfastSortButtonStyle = "background-color: darkorange";
+
+                    //Unset other sorts
+                    ListCurrentlyFilteredBySnackType = false;
+                    SnackSortButtonStyle = "background-color: sandybrown";
+
+                    ListCurrentlyFilteredByMealType = false;
+                    MealSortButtonStyle = "background-color: sandybrown";
+                }
+                StateHasChanged();
+                break;
+
+            case 2:
+                if (ListCurrentlyFilteredBySnackType)
+                {
+                    ListCurrentlyFilteredBySnackType = false;
+                    ListItems = MasterListItems;
+                    SnackSortButtonStyle = "background-color: sandybrown";
+                }
+                else
+                {
+                    //Set snack sort
+                    ListCurrentlyFilteredBySnackType = true;
+                    ListItems = MasterListItems.Where(x => x.FoodType == FoodTypes.SNACK).ToList();
+                    SnackSortButtonStyle = "background-color: darkorange";
+
+                    //Unset other sorts
+                    ListCurrentlyFilteredByBreakfastType = false;
+                    BreakfastSortButtonStyle = "background-color: sandybrown";
+
+                    ListCurrentlyFilteredByMealType = false;
+                    MealSortButtonStyle = "background-color: sandybrown";
+                }
+                StateHasChanged();
+                break;
+
+            case 3:
+                if (ListCurrentlyFilteredByMealType)
+                {
+                    ListCurrentlyFilteredByMealType = false;
+                    ListItems = MasterListItems;
+                    MealSortButtonStyle = "background-color: sandybrown";
+                }
+                else
+                {
+                    //Set breakfast sort
+                    ListCurrentlyFilteredByMealType = true;
+                    ListItems = MasterListItems.Where(x => x.FoodType == FoodTypes.MEAL).ToList();
+                    MealSortButtonStyle = "background-color: darkorange";
+
+                    //Unset other sorts
+                    ListCurrentlyFilteredByBreakfastType = false;
+                    BreakfastSortButtonStyle = "background-color: sandybrown";
+
+                    ListCurrentlyFilteredBySnackType = false;
+                    SnackSortButtonStyle = "background-color: sandybrown";
+                }
+                StateHasChanged();
+                break;
+
+            default: break;
         }
-        else if (rand > 18 && rand < 36)
-        {
-            return Constants.ColorGradiantText[1];
-        }
-        else if (rand > 36 && rand < 54)
-        {
-            return Constants.ColorGradiantText[2];
-        }
-        else if (rand > 54 && rand < 72)
-        {
-            return Constants.ColorGradiantText[3];
-        }
-         else if (rand > 72 && rand < 90)
-        {
-            return Constants.ColorGradiantText[4];
-        }
-        else
-        {
-            return Constants.ColorGradiantText[5];
-        }
+
     }
+
+    private void UpdateProgressBars()
+    {
+        CalorieBarStyle = "width: " + ((CalorieTextDigit / new decimal(2500)) * 100).ToString("0.00") + "%;";
+        ProteinBarStyle = "width: " + ((ProteinTextDigit / new decimal(2500)) * 100).ToString("0.00") + "%;";
+        CarbsBarStyle = "width: " + ((CarbsTextDigit / new decimal(2500)) * 100).ToString("0.00") + "%;";
+        FatBarStyle = "width: " + ((FatTextDigit / new decimal(2500)) * 100).ToString("0.00") + "%;";
+
+        StateHasChanged();
+    }
+
+    private async void ListSearchFilterChanged(ChangeEventArgs e)
+    {
+        await PopulateLists();
+
+        if (e is not null)
+        {
+            var search = (e.Value != null) ? e.Value.ToString().Trim().ToUpper() : "";
+            ListItems = ListItems.Where(x => x.Name.ToUpper().Contains(search)).ToList();
+        }
+
+        StateHasChanged();
+    }
+
+    #endregion Item List Filtering & Sorting
+
 }

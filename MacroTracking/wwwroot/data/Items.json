@@ -1,0 +1,65 @@
+﻿[
+  {
+    "Id": 1,
+    "Name": "Food Item 1",
+    "Calories": 123,
+    "Protein": 12.5,
+    "Carbs": 15.3,
+    "Fat": 4,
+    "FoodType": "Breakfast"
+  },
+  {
+    "Id": 2,
+    "Name": "Food Item 2",
+    "Calories": 125,
+    "Protein": 12.5,
+    "Carbs": 15.3,
+    "Fat": 4,
+    "FoodType": "Snack"
+  },
+  {
+    "Id": 3,
+    "Name": "Food Item with really long name asjdaskjdaskjd oierioweroi 23423iu jmnsdfnmsdfmn kj234k23mn mnsf",
+    "Calories": 1256,
+    "Protein": 64.2,
+    "Carbs": 123,
+    "Fat": 12.7,
+    "FoodType": "Meal"
+  },
+  {
+    "Id": 4,
+    "Name": "Shirmbles Delight",
+    "Calories": 1256,
+    "Protein": 64.2,
+    "Carbs": 123,
+    "Fat": 12.7,
+    "FoodType": "Breakfast"
+  },
+  {
+    "Id": 5,
+    "Name": "Winglers good stuff",
+    "Calories": 1256,
+    "Protein": 64.2,
+    "Carbs": 123,
+    "Fat": 12.7,
+    "FoodType": "Snack"
+  },
+  {
+    "Id": 6,
+    "Name": "Eye-Os",
+    "Calories": 1256,
+    "Protein": 64.2,
+    "Carbs": 123,
+    "Fat": 12.7,
+    "FoodType": "Meal"
+  },
+  {
+    "Id": 7,
+    "Name": "Food Fighters (deluxe edition)",
+    "Calories": 1256,
+    "Protein": 64.2,
+    "Carbs": 123,
+    "Fat": 12.7,
+    "FoodType": "Breakfast"
+  }
+]
