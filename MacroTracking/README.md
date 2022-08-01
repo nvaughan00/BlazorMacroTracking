@@ -1,0 +1,1 @@
+# Blazor Macro Tracking App
