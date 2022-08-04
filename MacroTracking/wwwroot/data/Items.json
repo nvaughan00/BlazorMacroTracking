@@ -1,21 +1,21 @@
 ﻿[
   {
     "Id": 1,
-    "Name": "Food Item 1",
-    "Calories": 123,
-    "Protein": 12.5,
+    "Name": "Chicken Breast (4oz)",
+    "Calories": 110,
+    "Protein": 23,
     "Carbs": 15.3,
-    "Fat": 4,
-    "FoodType": "Breakfast"
+    "Fat": 0,
+    "FoodType": "Meal"
   },
   {
     "Id": 2,
-    "Name": "Food Item 2",
-    "Calories": 125,
-    "Protein": 12.5,
-    "Carbs": 15.3,
-    "Fat": 4,
-    "FoodType": "Snack"
+    "Name": "Whey Protein (1 scoop)",
+    "Calories": 190,
+    "Protein": 30,
+    "Carbs": 7,
+    "Fat": 2.5,
+    "FoodType": "Meal"
   },
   {
     "Id": 3,

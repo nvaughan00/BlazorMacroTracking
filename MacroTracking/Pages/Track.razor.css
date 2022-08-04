@@ -62,11 +62,12 @@
 }
 
 .Facade {
-    max-width: 85vw;
+    max-width: 84vw;
 }
 
-.Submit {
-    width: 10%;
+.SubmitButton {
+    width: 30%;
+    height: 30%;
     text-align: center;
     background-color: red;
     border-radius: 5px;

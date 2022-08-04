@@ -96,9 +96,9 @@
                     </p>
                 </div>
 
-                <!--Middle buttons-->
-                <div class="DisplayItem" style="background-color: papayawhip">
-                    <div class="Submit" onclick="">Submit</div>
+                <!--Submit Button-->
+                <div class="DisplayItem" style="background-color: papayawhip; justify-content: center;">
+                    <button class="SubmitButton" style="position:relative; left:50%; top:50%;" @onclick="(() => SubmitItemsAsync())">Submit</button>
                 </div> 
             </div>
 
@@ -109,8 +109,13 @@
                     <li @key="item" @onclick="@(() => RemoveFromSubmitQueueAsync(@item.Id))">@item.Name</li>
                 }
             </ol>
-
         </div>
+        <ol>
+                @foreach (var item in ListItemSubmittedAndText)
+                {
+                    <li @key="item" @onclick="@(() => UpdateItemDisplayAsync(@item))">@item.Name</li>
+                }
+            </ol>
     </div>
 
 </div>
@@ -148,15 +153,17 @@
 
     //Headers and such
     private string? MacroDisplayName { get; set; }
-    private decimal? MacroDisplayCalories { get; set; }
-    private decimal? MacroDisplayProtein { get; set; }
-    private decimal? MacroDisplayCarbs { get; set; }
-    private decimal? MacroDisplayFat { get; set; }
+    private string? MacroDisplayCalories { get; set; }
+    private string? MacroDisplayProtein { get; set; }
+    private string? MacroDisplayCarbs { get; set; }
+    private string? MacroDisplayFat { get; set; }
 
     //For use in listing items
     private List<Item> MasterListItems = new List<Item>();
     private List<Item> ListItems = new List<Item>();
     private List<Item> ListItemsAdded = new List<Item>();
+    private List<Item> ListItemsFromText = new List<Item>();
+    private List<Item> ListItemSubmittedAndText = new List<Item>();
 
     //Button stylings
     private string? AlphabeticalSortButtonStyle { get; set; }
@@ -170,6 +177,8 @@
     private bool ListCurrentlyFilteredBySnackType { get; set; } = false;
     private bool ListCurrentlyFilteredByMealType { get; set; } = false;
 
+    private Dictionary<string, int> macroKeys = new Dictionary<string, int>();
+
     #endregion Data Bindings
 
     #region Start Program
@@ -182,21 +191,34 @@
 
     private async Task InitializeStuff()
     {
-        InitializeTextFields();
+        await Task.Run(() => ReadDataFromDB());
         await Task.Run(() => PopulateLists());
+        await Task.Run(() => InitializeTextFields());
+    }
+
+    private async Task ReadDataFromDB()
+    {
+       
     }
 
     private void InitializeTextFields()
     {
-        CalorieText = "0/2500";
-        ProteinText = "0/2500";
-        CarbsText = "0/2500";
-        FatText = "0/2500";
+        decimal tmpCals = (ListItemsFromText.Count > 0 ? ListItemsFromText.Sum(x => x.Calories) : 0);
+        decimal tmpProtein = (ListItemsFromText.Count > 0 ? ListItemsFromText.Sum(x => x.Protein) : 0);
+        decimal tmpCarbs = (ListItemsFromText.Count > 0 ? ListItemsFromText.Sum(x => x.Carbs) : 0);
+        decimal tmpFat = (ListItemsFromText.Count > 0 ? ListItemsFromText.Sum(x => x.Fat) : 0);
 
-        CalorieTextDigit = 0;
-        ProteinTextDigit = 0;
-        CarbsTextDigit = 0;
-        FatTextDigit = 0;
+        CalorieText = tmpCals + "/" + "2500";
+        ProteinText = tmpProtein + "/" + "2500";
+        CarbsText = tmpCarbs + "/" + "2500";
+        FatText = tmpFat + "/" + "2500";
+
+        CalorieTextDigit = tmpCals;
+        ProteinTextDigit = tmpProtein;
+        CarbsTextDigit = tmpCarbs;
+        FatTextDigit = tmpFat;
+
+        UpdateProgressBars();
 
         StateHasChanged();
     }
@@ -211,10 +233,6 @@
             MasterListItems = tmp;
         }
     }
-
-    #endregion Initialize
-
-    #region Item List Filtering & Sorting
 
     private async Task PushToSubmitQueueAsync(int id)
     {
@@ -248,30 +266,22 @@
 
     private void PushToSubmitQueue(int id)
     {
+        Console.WriteLine(id);
         Item? item = ListItems.Find(x => x.Id == id);
 
         if (item is not null)
         {
-            MacroDisplayName = item.Name;
-            MacroDisplayCalories = item.Calories;
-            MacroDisplayProtein = item.Protein;
-            MacroDisplayCarbs = item.Carbs;
-            MacroDisplayFat = item.Fat;
+            UpdateItemDisplay(item);
 
             CalorieTextDigit += item.Calories;
             ProteinTextDigit += item.Protein;
             CarbsTextDigit += item.Carbs;
             FatTextDigit += item.Fat;
 
-            CalorieText = CalorieTextDigit.ToString("0.00") + "/2500";
-            ProteinText = ProteinTextDigit.ToString("0.00") + "/2500";
-            CarbsText = CarbsTextDigit.ToString("0.00") + "/2500";
-            FatText = FatTextDigit.ToString("0.00") + "/2500";
-
+            UpdateHeaders();
             UpdateProgressBars();
 
-            ListItemsAdded.Insert(
-                0,
+            ListItemsAdded.Add(
                 new Item(
                     item.Id,
                     item.Name,
@@ -291,8 +301,6 @@
     {
         Item? item = ListItemsAdded.Find(x => x.Id == id) ?? null;
 
-        Console.WriteLine(id);
-
         if (item != null)
         {
             CalorieTextDigit -= item.Calories;
@@ -300,11 +308,7 @@
             CarbsTextDigit -= item.Carbs;
             FatTextDigit -= item.Fat;
 
-            CalorieText = CalorieTextDigit + "/2500";
-            ProteinText = ProteinTextDigit + "/2500";
-            CarbsText = CarbsTextDigit + "/2500";
-            FatText = FatTextDigit + "/2500";
-
+            UpdateHeaders();
             ListItemsAdded.Remove(item);
         }
 
@@ -410,10 +414,10 @@
 
     private void UpdateProgressBars()
     {
-        CalorieBarStyle = "width: " + ((CalorieTextDigit / new decimal(2500)) * 100).ToString("0.00") + "%;";
-        ProteinBarStyle = "width: " + ((ProteinTextDigit / new decimal(2500)) * 100).ToString("0.00") + "%;";
-        CarbsBarStyle = "width: " + ((CarbsTextDigit / new decimal(2500)) * 100).ToString("0.00") + "%;";
-        FatBarStyle = "width: " + ((FatTextDigit / new decimal(2500)) * 100).ToString("0.00") + "%;";
+        CalorieBarStyle = "width: " + (CalorieTextDigit / new decimal(2500)).ToString("0.00") + "%;";
+        ProteinBarStyle = "width: " + (ProteinTextDigit / new decimal(2500)).ToString("0.00") + "%;";
+        CarbsBarStyle = "width: " + (CarbsTextDigit / new decimal(2500)).ToString("0.00") + "%;";
+        FatBarStyle = "width: " + (FatTextDigit / new decimal(2500)).ToString("0.00") + "%;";
 
         StateHasChanged();
     }
@@ -424,7 +428,7 @@
 
         if (e is not null)
         {
-            var search = (e.Value != null) ? e.Value.ToString().Trim().ToUpper() : "";
+            var search = e.Value.ToString().Trim().ToUpper();
             ListItems = ListItems.Where(x => x.Name.ToUpper().Contains(search)).ToList();
         }
 
@@ -432,5 +436,45 @@
     }
 
     #endregion Item List Filtering & Sorting
+
+    private async void SubmitItemsAsync()
+    {
+        await Task.Run(() => SubmitItems());
+    }
+
+    private void SubmitItems()
+    {
+        ListItemSubmittedAndText.AddRange(ListItemsAdded);
+
+        ListItemsAdded.Clear();
+
+        StateHasChanged();
+    }
+
+    private async void UpdateItemDisplayAsync(Item item)
+    {
+        await Task.Run(() => UpdateItemDisplay(item));
+    }
+
+    private void UpdateItemDisplay(Item item)
+    {
+        MacroDisplayName = item.Name;
+        MacroDisplayCalories = item.Calories.ToString("0.00") + " k/Cal";
+        MacroDisplayProtein = item.Protein.ToString("0.00") + " g";
+        MacroDisplayCarbs = item.Carbs.ToString("0.00") + " g";
+        MacroDisplayFat = item.Fat.ToString("0.00") + " g";
+
+        StateHasChanged();
+    }
+
+    private void UpdateHeaders()
+    {
+        CalorieText = CalorieTextDigit.ToString("0.00") + "/" + (!string.IsNullOrEmpty(CalorieText) ? CalorieText.Split("/")[1] : "");
+        ProteinText = ProteinTextDigit.ToString("0.00") + "/" + (!string.IsNullOrEmpty(ProteinText) ? ProteinText.Split("/")[1] : "");
+        CarbsText = CarbsTextDigit.ToString("0.00") + "/" + (!string.IsNullOrEmpty(CarbsText) ? CarbsText.Split("/")[1] : "");
+        FatText = FatTextDigit.ToString("0.00") + "/" + (!string.IsNullOrEmpty(FatText) ? FatText.Split("/")[1] : "");
+
+        StateHasChanged();
+    }
 
 }
