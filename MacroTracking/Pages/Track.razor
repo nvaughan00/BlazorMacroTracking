@@ -3,6 +3,8 @@
 @using Models;
 @using Constants;
 @using Newtonsoft.Json;
+@using System.Data;
+@using Microsoft.Data.SqlClient;
 
 @inject HttpClient Http
 
@@ -198,7 +200,25 @@
 
     private async Task ReadDataFromDB()
     {
-       
+        /*
+        using(SqlConnection conn = new SqlConnection(""))
+        {
+            string query = "SELECT * FROM dbo.Item";
+
+            using(SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                DataTable customerTable = new DataTable("Top5Customers");
+
+                SqlDataAdapter dap = new SqlDataAdapter(cmd);
+
+                conn.Open();
+                dap.Fill(customerTable);
+                conn.Close();
+
+                await Task.CompletedTask;
+            }
+        }
+        */
     }
 
     private void InitializeTextFields()
